@@ -3,7 +3,7 @@ This scripts are made for my own use, but if you find this scripts useful. have 
 This script is made only for windows in mind.
 
 planed/added features<br>
-☐ exe file [make it an exe file for easier use for none python users]<br>
+□ exe file [make it an exe file for easier use for none python users]<br>
 ☐ mac support [make it support mac]<br>
 ☐ linux support [make it support linux]<br>
 ☑ tabs [make all codes tabs for ease of use]<br>
