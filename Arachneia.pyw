@@ -6,6 +6,10 @@ import re
 import subprocess
 import webbrowser
 import threading
+# import sys
+# import customtkinter
+
+
 # Function to translate date to numerical format
 def translate_date(input_date):
     for char in ".,:;/":
@@ -331,8 +335,22 @@ class URLExtractionTab(tk.Frame):
         self.rowconfigure(1, weight=1)
 
 root = tk.Tk()
-root.title('Arachneia')
 root.geometry("400x500")  # Set the size of the window
+root.title('Arachneia')
+
+# customtkinter.set_appearance_mode("mica")
+# root = customtkinter.CTk()
+# root.title('Arachneia')
+# root.iconbitmap("")
+# root.geometry("400x500")
+# if sys.platform.startswith("win"):
+#     # Apply the mica theme for windows (works with win 11)
+#     from ctypes import windll, byref, sizeof, c_int
+#     HWND = windll.user32.GetParent(root.winfo_id())
+#     if sys.getwindowsversion().build < 22523:    
+#         windll.dwmapi.DwmSetWindowAttribute(HWND, 1029, byref(c_int(0x01)), sizeof(c_int))
+#     else:
+#         windll.dwmapi.DwmSetWindowAttribute(HWND, 35, byref(c_int(35)), sizeof(c_int))
 
 # Create a tab control (notebook)
 tab_control = ttk.Notebook(root)
