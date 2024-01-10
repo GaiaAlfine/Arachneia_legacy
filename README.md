@@ -2,10 +2,11 @@
 This scripts are made for my own use, but if you find this scripts useful. have fun.
 This script is made only for windows in mind.
 
+not going to do.<br>
+mac and linux support.<br>
+
 planed/added features<br>
 ☐ exe file [make it an exe file for easier use for none python users]<br>
-☐ mac support [make it support mac]<br>
-☐ linux support [make it support linux]<br>
 ☒ tabs [make all codes tabs for ease of use]<br>
 ☐ Dark Mode [make dark mode for dark mode users]<br>
 ☐ stop button [add a stop button so users can stop if thay want to]<br>
