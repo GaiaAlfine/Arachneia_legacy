@@ -6,9 +6,11 @@ import re
 import subprocess
 import webbrowser
 import threading
-# import sys
-# import customtkinter
 
+def update_progress(value):
+    def real_update():
+        progress_bar['value'] = value
+    root.after(0, real_update)
 
 # Function to translate date to numerical format
 def translate_date(input_date):
@@ -97,9 +99,10 @@ class DateTranslationTab(tk.Frame):
 
 
 
-def copy_files(src, dst, file_types, update_status, stop_flag):
+def copy_files(src, dst, file_types, update_status, update_progress, stop_flag, total_files):
+    copied_files = 0
     for root, dirs, files in os.walk(src):
-        if stop_flag.is_set():  # Check if the stop flag is set
+        if stop_flag.is_set():
             update_status("Copying stopped.")
             return
 
@@ -112,6 +115,11 @@ def copy_files(src, dst, file_types, update_status, stop_flag):
                 dest_file = os.path.join(dest_dir, file)
                 shutil.copy(src_file, dest_file)
                 update_status(f"Copied: {src_file}")
+
+                # Update progress
+                copied_files += 1
+                progress = (copied_files / total_files) * 100
+                update_progress(progress)
 
     update_status("Copy completed successfully.")
 
@@ -170,17 +178,22 @@ class FileCopy(tk.Frame):
             if not selected_file_types:
                 messagebox.showerror("Error", "Please select at least one file type.")
                 return
-    
 
+            # Count total files to be copied for progress calculation
+            total_files = 0
+            for root, dirs, files in os.walk(self.src_dir):
+                total_files += sum(1 for file in files if any(file.endswith(ft) for ft in selected_file_types))
+            
             # Create a threading event to stop the copying process
             self.stop_flag = threading.Event()
 
             # Start the copy_files function in a new thread
-            copy_thread = threading.Thread(target=copy_files, args=(self.src_dir, self.dst_dir, selected_file_types, self.update_status, self.stop_flag))
+            copy_thread = threading.Thread(target=copy_files, args=(self.src_dir, self.dst_dir, selected_file_types, self.update_status, update_progress, self.stop_flag, total_files))
             copy_thread.start()
             
         else:
             messagebox.showerror("Error", "Please select both source and destination directories.")
+
 
     def stop_copy(self):
         # Set the stop flag to True
@@ -258,24 +271,40 @@ class URLExtractionTab(tk.Frame):
             return
 
         self.output_text.delete('1.0', tk.END)
-        for dirpath, dirnames, filenames in os.walk(folder_path):
-            for filename in filenames:
-                if filename.endswith('.txt'):
-                    file_path = os.path.join(dirpath, filename)
 
-                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-                        text = file.read()
-                    
-                    urls = re.findall(self.url_pattern, text)
-                    urls = self.separate_adjacent_urls(urls)  # Separate adjacent URLs
-                    
-                    if urls:
-                        self.output_text.insert(tk.END, f"From {filename} in ", 'bold')
-                        self.output_text.insert(tk.END, f"[{dirpath}]", 'dir')
-                        self.output_text.insert(tk.END, ":\n", 'bold')
-                        for url in urls:
-                            self.output_text.insert(tk.END, url + '\n', 'link')
-                        self.output_text.insert(tk.END, "\n")
+        # Calculate total number of files
+        total_files = sum(1 for _, _, files in os.walk(folder_path) if any(file.endswith('.txt') for file in files))
+
+        # Define a thread-safe update function
+        def thread_safe_update(file_path, dirpath, urls, current_file, total_files):
+            progress = (current_file / total_files) * 100
+            update_progress(progress)
+            self.output_text.insert(tk.END, f"From {os.path.basename(file_path)} in ", 'bold')
+            self.output_text.insert(tk.END, f"[{dirpath}]", 'dir')
+            self.output_text.insert(tk.END, ":\n", 'bold')
+            for url in urls:
+                self.output_text.insert(tk.END, url + '\n', 'link')
+            self.output_text.insert(tk.END, "\n")
+
+        # Start extraction in a new thread
+        def start_extraction():
+            current_file = 0
+            for dirpath, dirnames, filenames in os.walk(folder_path):
+                for filename in filenames:
+                    if filename.endswith('.txt'):
+                        file_path = os.path.join(dirpath, filename)
+                        with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+                            text = file.read()
+
+                        urls = re.findall(self.url_pattern, text)
+                        urls = self.separate_adjacent_urls(urls)  # Separate adjacent URLs
+                        
+                        current_file += 1
+                        root.after(0, thread_safe_update, file_path, dirpath, urls, current_file, total_files)
+
+            update_progress(100)  # Complete the progress
+
+        threading.Thread(target=start_extraction).start()
 
     def clear_output(self):
         self.output_text.delete('1.0', tk.END)
@@ -334,38 +363,43 @@ class URLExtractionTab(tk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
 
+def update_progress(value):
+    progress_bar['value'] = value
+    root.update_idletasks()
+
 root = tk.Tk()
-root.geometry("400x500")  # Set the size of the window
+root.geometry("400x500")
 root.title('Arachneia')
 
-# customtkinter.set_appearance_mode("mica")
-# root = customtkinter.CTk()
-# root.title('Arachneia')
-# root.iconbitmap("")
-# root.geometry("400x500")
-# if sys.platform.startswith("win"):
-#     # Apply the mica theme for windows (works with win 11)
-#     from ctypes import windll, byref, sizeof, c_int
-#     HWND = windll.user32.GetParent(root.winfo_id())
-#     if sys.getwindowsversion().build < 22523:    
-#         windll.dwmapi.DwmSetWindowAttribute(HWND, 1029, byref(c_int(0x01)), sizeof(c_int))
-#     else:
-#         windll.dwmapi.DwmSetWindowAttribute(HWND, 35, byref(c_int(35)), sizeof(c_int))
+# Create a main frame
+main_frame = tk.Frame(root)
+main_frame.pack(fill=tk.BOTH, expand=True)
 
-# Create a tab control (notebook)
-tab_control = ttk.Notebook(root)
+# Create a progress bar and place it at the top of the main frame
+progress_bar = ttk.Progressbar(main_frame, length=400, mode='determinate', style="black.Horizontal.TProgressbar")
+progress_bar.pack(side="top", fill=tk.X)
 
-# Create the tabs
+# Create a frame that will contain the tab control
+tab_frame = tk.Frame(main_frame)
+tab_frame.pack(fill=tk.BOTH, expand=True)
+
+# Create a tab control (notebook) inside the tab frame
+tab_control = ttk.Notebook(tab_frame)
 png_copy_tab = FileCopy(tab_control)
 date_translation_tab = DateTranslationTab(tab_control)
-url_extraction_tab = URLExtractionTab(tab_control)  # New tab for URL extraction
+url_extraction_tab = URLExtractionTab(tab_control)
 
-# Add tabs to the notebook
 tab_control.add(png_copy_tab, text='Copy Files')
 tab_control.add(date_translation_tab, text='Date Translation')
-tab_control.add(url_extraction_tab, text='URL Extraction')  # Add the new tab
+tab_control.add(url_extraction_tab, text='URL Extraction')
+tab_control.pack(expand=1, fill=tk.BOTH)
 
-tab_control.pack(expand=1, fill="both")
+style = ttk.Style(root)
+style.theme_use('default')
+style.configure("black.Horizontal.TProgressbar", background='#f1f1f1', troughcolor='#f1f1f1')
+
+
+# update_progress(50)
 
 # Run the application
 root.mainloop()
