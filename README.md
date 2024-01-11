@@ -11,7 +11,7 @@ planed/added features<br>
 ☐ Dark Mode [make dark mode for dark mode users]<br>
 ☐ stop button [add a stop button so users can stop if thay want to]<br>
 ☐ limiter [make a limiter for the program to not freeze so users can press the stop button]<br>
-☐ Progress bar and time left [add a progress bar and timer so user can se how much time is left before the code is done]<br>
+☒ Progress bar and time left [add a progress bar and timer so user can se how much time is left before the code is done]<br>
 <br>
 planed/added script<br>
 ☒ url extractor [extracet url from text documents and showing wear thay are in your system]<br>
